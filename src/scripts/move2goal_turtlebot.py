@@ -2,6 +2,9 @@
 import rospy
 from geometry_msgs.msg import Twist
 from turtlesim.msg import Pose
+from sensor_msgs.msg import Imu
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from math import pow, atan2, sqrt
 
 
@@ -10,15 +13,20 @@ class TurtleBot:
     def __init__(self):
         rospy.init_node('turtlebot_controller', anonymous=True)
 
-        self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        self.velocity_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
-        self.pose_subscriber = rospy.Subscriber('/imu', Pose, self.update_pose)
+        self.pose_subscriber = rospy.Subscriber('/odom', Odometry, self.update_pose)
 
+        self.odom = Odometry()
         self.pose = Pose()
         self.rate = rospy.Rate(10)
 
     def update_pose(self, data):
-        self.pose = data.orientation
+        self.orientation = data.pose.pose.orientation
+
+        orientation_list = [self.orientation.x, self.orientation.y, self.orientation.z, self.orientation.w]
+        self.pose.x, self.pose.y, self.pose.z = euler_from_quaternion (orientation_list)
+
         self.pose.x = round(self.pose.x, 4)
         self.pose.y = round(self.pose.y, 4)
 
@@ -38,16 +46,11 @@ class TurtleBot:
     def move2goal(self):
         goal_pose = Pose()
 
-        # Get the input from the param server
-        # goal_pose.x = float(input("Set your x goal: "))
-        # goal_pose.y = float(input("Set your y goal: "))
         goal_pose.x = rospy.get_param("x")
         goal_pose.y = rospy.get_param("y")
         print(goal_pose.y)
         print(goal_pose.x)
 
-        # Get distance tolerance from the param server
-        # distance_tolerance = float(input("Set your tolerance: "))
         distance_tolerance = rospy.get_param("tolerance")
         print(distance_tolerance)
 
@@ -56,7 +59,6 @@ class TurtleBot:
         while self.euclidean_distance(goal_pose) >= distance_tolerance:
 
             # Porportional controller.
-
             vel_msg.linear.x = self.linear_vel(goal_pose)
             vel_msg.linear.y = 0
             vel_msg.linear.z = 0
