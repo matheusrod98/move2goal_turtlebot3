@@ -1,4 +1,4 @@
 <launch>
     <node name="turtlebot3_controller" pkg="move2goal_turtlebot" type="move2goal_turtlebot.py" />
-    <rosparam command="load" file="$(find move2goal_turtlebot)/param/goal.yaml"/>
+    <rosparam command="load" file="$(find move2goal_turtlebot)/src/param/goal.yml"/>
 </launch>
